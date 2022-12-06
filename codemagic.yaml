@@ -1,27 +1,54 @@
+# Check out https://docs.codemagic.io/yaml/building-a-react-native-app/ for more information
+# Please review and update values
+
 workflows:
-    sample-workflow:
-        name: Codemagic Sample Workflow
+    react-native-ios:
+        name: React Native TApp
         max_build_duration: 120
         instance_type: mac_mini_m1
+        integrations:
+          app_store_connect: codemagic
         environment:
           ios_signing:
             distribution_type: ad_hoc
             bundle_identifier: com.plussoftjo.tapp
           vars:
-            BUNDLE_ID: "com.plussoftjo.tapp"
             XCODE_WORKSPACE: "TApp.xcworkspace" # <-- Put the name of your Xcode workspace here
             XCODE_SCHEME: "TApp" # <-- Put the name of your Xcode scheme here
-            APP_ID: 1555555551
+          node: v16.11.1
+          xcode: latest
+          cocoapods: default
         scripts:
-          - name: Set up code signing settings on Xcode project
-            script: xcode-project use-profiles
-          - name: Build ipa for distribution
-            script: | 
-              xcode-project build-ipa \
-                --workspace "$CM_BUILD_DIR/ios/$XCODE_WORKSPACE" \
-                --scheme "$XCODE_SCHEME"
+            - name: Install npm dependencies
+              script: |
+                npm install
+            - name: Install CocoaPods dependencies
+              script: |
+                cd ios && pod install
+            - name: Set Info.plist values
+              script: |
+                # This allows publishing without manually answering the question about encryption 
+                PLIST=$CM_BUILD_DIR/$XCODE_SCHEME/Info.plist
+                PLIST_BUDDY=/usr/libexec/PlistBuddy
+                $PLIST_BUDDY -c "Add :ITSAppUsesNonExemptEncryption bool false" $PLIST
+            - name: Set up code signing settings on Xcode project
+              script: |
+                xcode-project use-profiles --warn-only
+            - name: Increment build number
+              script: |
+                #!/bin/sh
+                set -e
+                set -x
+                cd $CM_BUILD_DIR/ios
+                LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_ID")
+                agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+            - name: Build ipa for distribution
+              script: |
+                xcode-project build-ipa \
+                  --workspace "$CM_BUILD_DIR/ios/$XCODE_WORKSPACE" \
+                  --scheme "$XCODE_SCHEME"
         artifacts:
-          - build/ios/ipa/*.ipa
-          - /tmp/xcodebuild_logs/*.log
-          - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
-          - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+            - build/ios/ipa/*.ipa
+            - /tmp/xcodebuild_logs/*.log
+            - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+            - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
