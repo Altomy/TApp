@@ -7,12 +7,12 @@ workflows:
         distribution_type: ad_hoc 
         scripts:
           - name: Set up code signing settings on Xcode project
-          script: xcode-project use-profiles
+            script: xcode-project use-profiles
           - name: Build ipa for distribution
-          script: | 
-          xcode-project build-ipa \
-          --workspace "$CM_BUILD_DIR/ios/$XCODE_WORKSPACE" \
-          --scheme "$XCODE_SCHEME"
+            script: | 
+              xcode-project build-ipa \
+                --workspace "$CM_BUILD_DIR/ios/$XCODE_WORKSPACE" \
+                --scheme "$XCODE_SCHEME"
         artifacts:
           - build/ios/ipa/*.ipa
           - /tmp/xcodebuild_logs/*.log
