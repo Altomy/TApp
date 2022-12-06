@@ -3,8 +3,15 @@ workflows:
         name: Codemagic Sample Workflow
         max_build_duration: 120
         instance_type: mac_mini_m1
-        bundle_identifier: com.plussoftjo.tapp
-        distribution_type: ad_hoc 
+        environment:
+        ios_signing:
+          distribution_type: app_hoc
+          bundle_identifier: com.plussoftjo.tapp
+        vars:
+          BUNDLE_ID: "com.plussoftjo.tapp"
+          XCODE_WORKSPACE: "TApp.xcworkspace" # <-- Put the name of your Xcode workspace here
+          XCODE_SCHEME: "TApp" # <-- Put the name of your Xcode scheme here
+          APP_ID: 1555555551
         scripts:
           - name: Set up code signing settings on Xcode project
             script: xcode-project use-profiles
